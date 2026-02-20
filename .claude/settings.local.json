@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git rev-parse --abbrev-ref HEAD)",
+      "Bash(git fetch:*)",
+      "Bash(pwsh -File .specify/scripts/powershell/create-new-feature.ps1:*)",
+      "Bash(tree:*)",
+      "Bash(pip install:*)",
+      "Bash(npm install)",
+      "Bash(dir:*)",
+      "Bash(npm install:*)",
+      "Bash(python -m uvicorn:*)",
+      "Bash(powershell Get-ChildItem:*)",
+      "Bash(powershell Get-Content \"C:\\\\Users\\\\KHANLA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--h2-phase-III\\\\tasks\\\\bc24620.output\" -Tail 10)",
+      "Bash(powershell Get-Content:*)",
+      "Bash(python -m src.main:*)",
+      "Bash(findstr:*)",
+      "Bash(npm start)"
+    ]
+  }
+}

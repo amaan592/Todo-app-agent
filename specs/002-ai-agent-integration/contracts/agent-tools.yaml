@@ -1,0 +1,339 @@
+# Agent Tool Definitions
+
+**Feature**: AI Agent Integration (002-ai-agent-integration)
+**Created**: 2026-02-19
+**Purpose**: Define structured tool interfaces for backend API operations
+
+---
+
+## Overview
+
+The AI Agent exposes the backend Todo API as four structured tools. Each tool represents a backend API operation and handles request/response formatting.
+
+**Constitution Compliance**: All operations use backend API endpoints (Principle II, IV, VIII).
+
+---
+
+## Tool Catalog
+
+| Tool | Operation | Backend Endpoint | Description |
+|------|-----------|------------------|-------------|
+| create_task | POST | /api/v1/tasks | Create a new task |
+| get_tasks | GET | /api/v1/tasks | Retrieve tasks (with optional filter) |
+| update_task | PUT | /api/v1/tasks/{id} | Update an existing task |
+| delete_task | DELETE | /api/v1/tasks/{id} | Delete a task |
+
+---
+
+## Tool Specifications
+
+### create_task
+
+**Purpose**: Create a new task in the system
+
+**Parameters**:
+```python
+{
+  "title": str,        # Required: Task title (max 200 chars)
+  "description": str   # Optional: Task description (max 1000 chars)
+}
+```
+
+**Backend Request**:
+```http
+POST /api/v1/tasks
+Content-Type: application/json
+
+{
+  "title": "Buy groceries",
+  "description": "Milk, eggs, bread"
+}
+```
+
+**Success Response** (201 Created):
+```python
+{
+  "success": True,
+  "data": {
+    "id": 5,
+    "title": "Buy groceries",
+    "description": "Milk, eggs, bread",
+    "status": "PENDING",
+    "created_at": "2026-02-19T10:30:00Z"
+  },
+  "error": None
+}
+```
+
+**Error Responses**:
+- 400 Bad Request: Invalid or missing title
+- 422 Unprocessable Entity: Validation failed
+- 500 Internal Server Error: Backend failure
+
+**Example Usage**:
+```python
+result = await create_task(
+    title="Finish project report",
+    description="Q1 analysis document"
+)
+# Returns: {"success": True, "data": {"id": 6, "title": "...", ...}}
+```
+
+---
+
+### get_tasks
+
+**Purpose**: Retrieve tasks from the system
+
+**Parameters**:
+```python
+{
+  "status": str  # Optional: "PENDING", "COMPLETED", or None for all
+}
+```
+
+**Backend Request**:
+```http
+GET /api/v1/tasks?status=PENDING  # If status filter provided
+GET /api/v1/tasks                 # If no filter
+```
+
+**Success Response** (200 OK):
+```python
+{
+  "success": True,
+  "data": [
+    {
+      "id": 1,
+      "title": "Finish project report",
+      "description": "Q1 analysis",
+      "status": "PENDING",
+      "created_at": "2026-02-18T09:00:00Z"
+    },
+    # ... more tasks
+  ],
+  "error": None
+}
+```
+
+**Error Responses**:
+- 400 Bad Request: Invalid status value
+- 500 Internal Server Error: Backend failure
+
+**Example Usage**:
+```python
+# Get all tasks
+all_tasks = await get_tasks()
+
+# Get only pending tasks
+pending_tasks = await get_tasks(status="PENDING")
+```
+
+---
+
+### update_task
+
+**Purpose**: Update an existing task's fields
+
+**Parameters**:
+```python
+{
+  "task_id": int,           # Required: ID of task to update
+  "fields": dict            # Required: Fields to update
+}
+
+# fields can contain:
+# - "title": str
+# - "description": str
+# - "status": "PENDING" | "COMPLETED"
+```
+
+**Backend Request**:
+```http
+PUT /api/v1/tasks/3
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+```
+
+**Success Response** (200 OK):
+```python
+{
+  "success": True,
+  "data": {
+    "id": 3,
+    "title": "Buy groceries",
+    "description": "Milk, eggs, bread",
+    "status": "COMPLETED",
+    "created_at": "2026-02-19T10:30:00Z"
+  },
+  "error": None
+}
+```
+
+**Error Responses**:
+- 404 Not Found: Task ID doesn't exist
+- 400 Bad Request: Invalid field values
+- 422 Unprocessable Entity: Validation failed
+- 500 Internal Server Error: Backend failure
+
+**Example Usage**:
+```python
+# Mark task as complete
+result = await update_task(
+    task_id=3,
+    fields={"status": "COMPLETED"}
+)
+
+# Update task title
+result = await update_task(
+    task_id=3,
+    fields={"title": "Updated title"}
+)
+```
+
+---
+
+### delete_task
+
+**Purpose**: Delete a task from the system
+
+**Parameters**:
+```python
+{
+  "task_id": int  # Required: ID of task to delete
+}
+```
+
+**Backend Request**:
+```http
+DELETE /api/v1/tasks/3
+```
+
+**Success Response** (200 OK):
+```python
+{
+  "success": True,
+  "data": {
+    "id": 3,
+    "title": "Buy groceries",
+    "deleted": True
+  },
+  "error": None
+}
+```
+
+**Error Responses**:
+- 404 Not Found: Task ID doesn't exist
+- 500 Internal Server Error: Backend failure
+
+**Example Usage**:
+```python
+result = await delete_task(task_id=3)
+# Returns: {"success": True, "data": {"id": 3, "deleted": True}}
+```
+
+---
+
+## Tool Call Flow
+
+```
+User Instruction
+    ↓
+Intent Parser
+    ↓
+Tool Selection + Parameter Extraction
+    ↓
+Tool Execution (HTTP request to backend)
+    ↓
+Backend Response
+    ↓
+Result Formatting
+    ↓
+Response Generator
+    ↓
+User Response
+```
+
+---
+
+## Error Handling
+
+All tools follow consistent error handling:
+
+### Backend Connection Errors
+
+```python
+try:
+    response = await http_client.post(url, json=data)
+except httpx.ConnectError as e:
+    return ToolResult(
+        success=False,
+        data=None,
+        error=f"Backend connection failed: {str(e)}",
+        tool_name="create_task"
+    )
+except httpx.TimeoutException as e:
+    return ToolResult(
+        success=False,
+        data=None,
+        error="Backend request timed out",
+        tool_name="create_task"
+    )
+```
+
+### Backend API Errors
+
+```python
+if response.status_code >= 400:
+    return ToolResult(
+        success=False,
+        data=None,
+        error=f"Backend error {response.status_code}: {response.text}",
+        tool_name="create_task"
+    )
+```
+
+---
+
+## Tool Implementation Location
+
+Tools are implemented in: `backend/src/agent/tools.py`
+
+Each tool is an async function:
+```python
+async def create_task(title: str, description: str = None) -> ToolResult:
+    ...
+
+async def get_tasks(status: str = None) -> ToolResult:
+    ...
+
+async def update_task(task_id: int, fields: dict) -> ToolResult:
+    ...
+
+async def delete_task(task_id: int) -> ToolResult:
+    ...
+```
+
+---
+
+## Testing Requirements
+
+Each tool must have:
+
+1. **Success path tests**: Verify correct API call and response parsing
+2. **Error path tests**: Verify error handling for 404, 400, 500 responses
+3. **Connection error tests**: Verify handling of backend unavailability
+4. **Parameter validation tests**: Verify parameter validation before API call
+
+Test location: `backend/tests/agent/test_tools.py`
+
+---
+
+## References
+
+- Backend API: `backend/src/api/tasks.py`
+- Data Model: [data-model.md](./data-model.md)
+- Research: [research.md](./research.md#decision-3-tool-definition-pattern)

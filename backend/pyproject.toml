@@ -1,0 +1,27 @@
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | node_modules
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+known_third_party = ["fastapi", "sqlalchemy", "uvicorn", "pydantic", "alembic", "dotenv"]
+known_first_party = ["src"]
+
+[tool.pylint.'MESSAGES CONTROL']
+max-line-length = 88
